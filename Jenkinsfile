@@ -6,9 +6,9 @@ pipeline {
 
     // Define application variables
     environment {
-        IMAGE_NAME = 'devops-app:1.0'
+        IMAGE_NAME = 'devops-app:2.0'
         CONTAINER_NAME = 'devops-container'
-        HOST_PORT = '8080'
+        HOST_PORT = '8081'
     }
 
     stages {
@@ -27,7 +27,7 @@ pipeline {
             steps {
                 echo 'Building Docker image...'
 
-                bat 'docker build -t devops-app:1.0 .'
+                bat 'docker build -t %IMAGE_NAME% .'
             }
         }
 
@@ -36,7 +36,16 @@ pipeline {
             steps {
                 echo 'Testing index.html...'
 
-                bat 'powershell -NoProfile -Command "if (Select-String -Path index.html -Pattern ''<h1>Hello World from Jenkins!</h1>'') { Write-Output ''HTML test passed'' } else { Write-Error ''HTML test failed''; exit 1 }"'
+                bat '''
+                    powershell -NoProfile -Command "
+                    if (Select-String -Path index.html -Pattern '<h1>Hello World from Jenkins!</h1>') {
+                        Write-Output 'HTML test passed'
+                    }
+                    else {
+                        Write-Error 'HTML test failed'
+                        exit 1
+                    }"
+                '''
             }
         }
 
@@ -46,10 +55,10 @@ pipeline {
                 echo 'Deploying application...'
 
                 // Remove previous container if it exists
-                bat 'docker rm -f devops-container 2>$null; if ($LASTEXITCODE -ne 0) { exit 0 }'
+                bat 'docker rm -f %CONTAINER_NAME% 2>NUL || exit /b 0'
 
-                // Start a new container
-                bat 'docker run -d -p 8080:80 --name devops-container devops-app:1.0'
+                // Start a new container on port 8081
+                bat 'docker run -d -p %HOST_PORT%:80 --name %CONTAINER_NAME% %IMAGE_NAME%'
             }
         }
 
@@ -58,16 +67,21 @@ pipeline {
             steps {
                 echo 'Checking deployed application...'
 
+                // Display running containers
                 bat 'docker ps'
-                bat 'curl.exe -f http://localhost:8080'
+
+                // Verify the deployed web application
+                bat 'curl.exe -f http://localhost:%HOST_PORT%'
             }
         }
     }
 
     // Display the final pipeline result
     post {
+
         success {
             echo 'Application successfully deployed!'
+            echo 'Open http://localhost:8081 to view the application.'
         }
 
         failure {

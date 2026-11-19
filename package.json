@@ -1,0 +1,13 @@
+
+{
+  "name": "devops",
+  "version": "1.0.0",
+  "description": "DevOps HTML testing project",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest --runInBand"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0"
+  }
+}
